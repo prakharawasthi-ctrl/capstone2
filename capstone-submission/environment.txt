@@ -1,0 +1,9 @@
+Python version: Python 3.12.4 (tags/v3.12.4:8e8a4ba, Jun 6 2024) [MSC v.1940 64-bit]
+OS: Microsoft Windows 11 Home Single Language, Version 10.0.26200 Build 26200 (win32 / MINGW64_NT-10.0-26200)
+Date run: 2026-09-28
+Ran any system live? No — all runs offline/replay. Policy live pipeline attempted without ANTHROPIC_API_KEY and failed auth (TypeError: Could not resolve authentication method); used offline fallback `pytest tests/test_us04_routing.py -v` per instructions. Mortgage used `--mode replay`. Supply chain used `--offline`.
+
+Setup per project (from each final-exercise solution/ dir):
+- Policy: `Build a Validated, Routed Insurance Policy Extraction Pipeline/04-hitl-routing/solution/` — `python -m venv .venv` + `.venv/Scripts/pip install -e ".[dev]"`
+- Mortgage: `Build a Resilient Mortgage Document Extraction System/04-validate-mathematical-consistency/solution/` — fresh `.venv`; `pip install anthropic==0.64.0` then `pip install -e . --no-deps` + pydantic/pytest/mypy/ruff (workaround: full dev install hits Windows MAX_PATH on anthropic 1.8.0 beta file)
+- Supply chain: `Investigate Supply Chain Risk with Multi-Source Synthesis/03-resilient-coordinator/solution/` — solution-dir .venv unusable for torch (Windows LongPaths disabled); used short-path venv `C:/venv` with `pip install -e "./[dev]"` (torch 2.14.0+cpu, chromadb 1.5.9, sentence-transformers 6.1.0). First run downloaded embedding model all-MiniLM-L6-v2 (~90 MB). CLI needs `PYTHONIOENCODING=utf-8` on this console.

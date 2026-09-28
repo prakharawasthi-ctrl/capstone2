@@ -1,0 +1,61 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\.venv\Scripts\policy-extractor.exe\__main__.py", line 7, in <module>
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\policy_extractor\__main__.py", line 82, in main
+    return _cmd_pipeline(args)
+           ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\policy_extractor\__main__.py", line 144, in _cmd_pipeline
+    outcome = extract_with_retry(
+              ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\policy_extractor\retry.py", line 48, in extract_with_retry
+    response = client.create(
+               ^^^^^^^^^^^^^^
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\policy_extractor\client.py", line 27, in create
+    result: Message = self._client.messages.create(**kwargs)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\.venv\Lib\site-packages\anthropic\_utils\_utils.py", line 294, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\.venv\Lib\site-packages\anthropic\resources\messages\messages.py", line 997, in create
+    return self._post(
+           ^^^^^^^^^^^
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\.venv\Lib\site-packages\anthropic\_base_client.py", line 1543, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\.venv\Lib\site-packages\anthropic\_base_client.py", line 1150, in request
+    response, prepared = self._attempt_request(
+                         ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\.venv\Lib\site-packages\anthropic\_base_client.py", line 1290, in _attempt_request
+    request = self._build_request(options, retries_taken=retries_taken)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\.venv\Lib\site-packages\anthropic\_base_client.py", line 557, in _build_request
+    headers = self._build_headers(options, retries_taken=retries_taken)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\.venv\Lib\site-packages\anthropic\_base_client.py", line 502, in _build_headers
+    self._validate_headers(headers, omitted)
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\.venv\Lib\site-packages\anthropic\_client.py", line 418, in _validate_headers
+    raise TypeError(
+TypeError: "Could not resolve authentication method. Expected one of api_key, auth_token, or credentials to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted"
+===== OFFLINE FALLBACK: pytest tests/test_us04_routing.py -v (no API key available) =====
+============================= test session starts =============================
+platform win32 -- Python 3.12.4, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution
+configfile: pyproject.toml
+plugins: anyio-4.15.1, asyncio-1.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 9 items
+
+tests/test_us04_routing.py::test_ac_04_02_all_clear_routes_to_auto_approve PASSED [ 11%]
+tests/test_us04_routing.py::test_ac_04_02_low_confidence_routes_to_human_review PASSED [ 22%]
+tests/test_us04_routing.py::test_ac_04_02_integration_failure_routes_to_human_review PASSED [ 33%]
+tests/test_us04_routing.py::test_ac_04_06_high_confidence_plus_reviewer_disagreement_still_routes_to_human_review PASSED [ 44%]
+tests/test_us04_routing.py::test_ac_04_03_stratified_sampler_picks_from_every_stratum_with_eligible_records PASSED [ 55%]
+tests/test_us04_routing.py::test_ac_04_03_only_auto_approve_decisions_are_eligible_for_spot_check PASSED [ 66%]
+tests/test_us04_routing.py::test_ac_04_04_calibration_report_is_sliced_by_policy_type_and_field PASSED [ 77%]
+tests/test_us04_routing.py::test_ac_04_04_calibration_report_handles_empty_input PASSED [ 88%]
+tests/test_us04_routing.py::test_ac_04_05_routing_decisions_written_to_json_file PASSED [100%]
+
+============================== 9 passed in 0.12s ==============================
+FALLBACK_EXIT:0

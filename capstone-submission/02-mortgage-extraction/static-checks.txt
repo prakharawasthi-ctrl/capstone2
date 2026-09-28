@@ -1,0 +1,7 @@
+=== mypy mortgage_extractor/ ===
+Success: no issues found in 11 source files
+mypy exit:0
+
+=== ruff check mortgage_extractor/ tests/ ===
+All checks passed!
+ruff exit:0

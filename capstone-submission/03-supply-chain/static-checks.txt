@@ -1,0 +1,7 @@
+C:\venv\Lib\site-packages\numpy\__init__.pyi:737: error: Type statement is only supported in Python 3.12 and greater  [syntax]
+Found 1 error in 1 file (errors prevented further checking)
+All checks passed!
+
+=== mypy --python-version 3.12 (override; default config pins 3.11 which trips on installed numpy __init__.pyi using PEP 695 'type' syntax) ===
+Success: no issues found in 8 source files
+exit:0
