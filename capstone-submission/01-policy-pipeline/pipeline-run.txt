@@ -1,3 +1,9 @@
+PROVENANCE HEADER (added 2026-09-29): live pipeline NOT run — no ANTHROPIC_API_KEY/Vocareum key in this environment.
+Command attempted: .venv/Scripts/policy-extractor pipeline data/policies/ --routing-out routing_decisions.json --seed 42
+Result below: TypeError Could not resolve authentication method (no key), exit before any extraction.
+routing_decisions.json in this folder was generated OFFLINE via write_routing_decisions (same writer covered by test_ac_04_05_routing_decisions_written_to_json_file): 2 records POL-A auto_approve / POL-B human_review. It is NOT live-pipeline output.
+Fallback evidence below is: pytest tests/test_us04_routing.py -v (9 passed).
+==================================================================================
 Traceback (most recent call last):
   File "<frozen runpy>", line 198, in _run_module_as_main
   File "<frozen runpy>", line 88, in _run_code

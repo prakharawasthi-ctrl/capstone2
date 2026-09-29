@@ -1,3 +1,178 @@
+SYSTEM 1 PERTURBATION -- deliberate input change (offline replay + live-CLI attempt)
+Date: 2026-09-29 | No ANTHROPIC_API_KEY / Vocareum key available in this environment.
+Change I made: copied data/policies/POL-2025-001.txt to
+  capstone-submission/01-policy-pipeline/POL-2025-001-perturbed.txt
+and deleted the required value from the copy (one line):
+  BEFORE: '   Total Policy Premium ........................  $ 1,847.62'
+  AFTER:  '   Total Policy Premium ........................'
+Original kept unedited as baseline. Diff (baseline vs perturbed):
+
+--- "Build a Validated, Routed Insurance Policy Extraction Pipeline/04-hitl-routing/solution/data/policies/POL-2025-001.txt"	2026-06-29 03:09:47.000000000 +0530
++++ capstone-submission/01-policy-pipeline/POL-2025-001-perturbed.txt	2026-09-29 19:06:40.090500500 +0530
+@@ -13,7 +13,7 @@
+    2019 Honda Accord LX     VIN: 1HGCV1F36KA0 23 871
+ 
+ PREMIUM SUMMARY
+-   Total Policy Premium ........................  $ 1,847.62
++   Total Policy Premium ........................
+    Payment Plan: Semi-Annual
+ 
+ COVERAGES AND LIMITS
+
+NOTE ON METHOD: live policy-extractor extract needs ANTHROPIC_API_KEY and fails
+before any model call in this environment (see LIVE CLI section below: both files
+-> TypeError Could not resolve authentication method). So the before/after safeguard
+comparison is run OFFLINE with the same production code path the live CLI uses:
+validate_extraction() + extract_with_retry() fed by RecordedClient responses shaped
+exactly like real API tool_use messages (tests/conftest.py::make_tool_use_message).
+The perturbed response returns premium_amount=null, which is what the system prompt
+(SYSTEM_PROMPT rule 1: 'If a required field is not stated ... return null. Do not
+guess.') requires of a faithful model when the value is absent from the document.
+
+=== INPUT CHANGE (one line deleted from a copy; original kept as baseline) ===
+baseline line:    Total Policy Premium ........................  $ 1,847.62
+perturbed line:    Total Policy Premium ........................
+
+=== PREDICTION (written before running) ===
+Baseline: faithful extraction returns premium_amount=1847.62 -> validator clean (None), extract_with_retry returns PolicyExtraction with 1 API call.
+Perturbed: premium value absent from source, faithful model returns premium_amount=null per SYSTEM_PROMPT rule 1 -> validator flags missing_source/premium_amount_absent -> extract_with_retry halts immediately as RetryFutileEscalation with exactly 1 API call, no retry. Retrying cannot recover text not in the document and risks hallucinating Schedule-A-style invention.
+
+=== VALIDATOR DIRECT (no API key needed) ===
+baseline validate_extraction -> None
+perturbed validate_extraction -> field=premium_amount category=missing_source pattern=premium_amount_absent observed=null
+perturbed message: Field 'premium_amount' returned null — the source document does not contain this information. Retry is futile; escalate to human review.
+
+=== EXTRACT_WITH_RETRY VIA RecordedClient (faithful model outputs; offline replay) ===
+--- BASELINE (premium present) ---
+outcome kind: PolicyExtraction
+client.call_count: 1
+record: {
+  "confidence": {
+    "coverage_limit": 0.9,
+    "deductible": 0.95,
+    "endorsements": 0.9,
+    "exclusions": 0.9,
+    "policy_type": 0.95,
+    "premium_amount": 0.9
+  },
+  "coverage_limit": 300000.0,
+  "deductible": 500.0,
+  "endorsements": [
+    "Endorsement(name='Roadside Assistance', limit=None)"
+  ],
+  "exclusions": [
+    "Racing"
+  ],
+  "final_attempt_index": 0,
+  "policy_id": "POL-2025-001",
+  "policy_type": "auto",
+  "premium_amount": 1847.62,
+  "premium_components": null,
+  "retry_count": 0,
+  "validation_history": []
+}
+--- PERTURBED (premium removed) ---
+outcome kind: RetryFutileEscalation
+client.call_count: 1
+record: {
+  "category": "missing_source",
+  "detected_pattern": "premium_amount_absent",
+  "field": "premium_amount",
+  "policy_id": "POL-2025-001",
+  "reason": "Field 'premium_amount' returned null \u2014 the source document does not contain this information. Retry is futile; escalate to human review."
+}
+
+=== CONTRAST ===
+Unperturbed: PolicyExtraction, 1 call, no escalation. Perturbed: RetryFutileEscalation(field='premium_amount', detected_pattern='premium_amount_absent'), 1 call, no retry. Same call count, opposite outcome: success vs immediate halt. Recoverable failures (format/consistency) would make 2+ calls; missing_source makes exactly 1.
+
+===== LIVE CLI ATTEMPTS ON MY EDITED DOCUMENT (both fail on auth; no key) =====
+===== LIVE CLI ATTEMPT: baseline =====
+$ .venv/Scripts/policy-extractor extract data/policies/POL-2025-001.txt --policy-id POL-2025-001
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\.venv\Scripts\policy-extractor.exe\__main__.py", line 7, in <module>
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\policy_extractor\__main__.py", line 78, in main
+    return _cmd_extract(args)
+           ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\policy_extractor\__main__.py", line 89, in _cmd_extract
+    outcome = extract_with_retry(
+              ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\policy_extractor\retry.py", line 48, in extract_with_retry
+    response = client.create(
+               ^^^^^^^^^^^^^^
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\policy_extractor\client.py", line 27, in create
+    result: Message = self._client.messages.create(**kwargs)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\.venv\Lib\site-packages\anthropic\_utils\_utils.py", line 294, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\.venv\Lib\site-packages\anthropic\resources\messages\messages.py", line 997, in create
+    return self._post(
+           ^^^^^^^^^^^
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\.venv\Lib\site-packages\anthropic\_base_client.py", line 1543, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\.venv\Lib\site-packages\anthropic\_base_client.py", line 1150, in request
+    response, prepared = self._attempt_request(
+                         ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\.venv\Lib\site-packages\anthropic\_base_client.py", line 1290, in _attempt_request
+    request = self._build_request(options, retries_taken=retries_taken)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\.venv\Lib\site-packages\anthropic\_base_client.py", line 557, in _build_request
+    headers = self._build_headers(options, retries_taken=retries_taken)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\.venv\Lib\site-packages\anthropic\_base_client.py", line 502, in _build_headers
+    self._validate_headers(headers, omitted)
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\.venv\Lib\site-packages\anthropic\_client.py", line 418, in _validate_headers
+    raise TypeError(
+TypeError: "Could not resolve authentication method. Expected one of api_key, auth_token, or credentials to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted"
+BASELINE_EXIT:1
+
+===== LIVE CLI ATTEMPT: perturbed (premium value deleted) =====
+$ .venv/Scripts/policy-extractor extract C:/Users/Prakhar/AppData/Local/Temp/opencode/POL-2025-001-perturbed.txt --policy-id POL-2025-001
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\.venv\Scripts\policy-extractor.exe\__main__.py", line 7, in <module>
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\policy_extractor\__main__.py", line 78, in main
+    return _cmd_extract(args)
+           ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\policy_extractor\__main__.py", line 89, in _cmd_extract
+    outcome = extract_with_retry(
+              ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\policy_extractor\retry.py", line 48, in extract_with_retry
+    response = client.create(
+               ^^^^^^^^^^^^^^
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\policy_extractor\client.py", line 27, in create
+    result: Message = self._client.messages.create(**kwargs)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\.venv\Lib\site-packages\anthropic\_utils\_utils.py", line 294, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\.venv\Lib\site-packages\anthropic\resources\messages\messages.py", line 997, in create
+    return self._post(
+           ^^^^^^^^^^^
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\.venv\Lib\site-packages\anthropic\_base_client.py", line 1543, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\.venv\Lib\site-packages\anthropic\_base_client.py", line 1150, in request
+    response, prepared = self._attempt_request(
+                         ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\.venv\Lib\site-packages\anthropic\_base_client.py", line 1290, in _attempt_request
+    request = self._build_request(options, retries_taken=retries_taken)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\.venv\Lib\site-packages\anthropic\_base_client.py", line 557, in _build_request
+    headers = self._build_headers(options, retries_taken=retries_taken)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\.venv\Lib\site-packages\anthropic\_base_client.py", line 502, in _build_headers
+    self._validate_headers(headers, omitted)
+  File "C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\.venv\Lib\site-packages\anthropic\_client.py", line 418, in _validate_headers
+    raise TypeError(
+TypeError: "Could not resolve authentication method. Expected one of api_key, auth_token, or credentials to be set. Or for one of the `X-Api-Key` or `Authorization` headers to be explicitly omitted"
+PERTURBED_EXIT:1
+
+===== EXISTING SUITE (tests/test_us01_retry.py -v, still passing) =====
 ============================= test session starts =============================
 platform win32 -- Python 3.12.4, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\Prakhar\Downloads\1790604508\Build a Validated, Routed Insurance Policy Extraction Pipeline\04-hitl-routing\solution\.venv\Scripts\python.exe
 cachedir: .pytest_cache
@@ -22,4 +197,5 @@ tests/test_us01_retry.py::test_ac_01_05_success_metadata_after_retry PASSED [ 85
 tests/test_us01_retry.py::test_ac_01_06_pattern_summary_counts_across_runs PASSED [ 92%]
 tests/test_us01_retry.py::test_live_extracts_well_formed_policy SKIPPED  [100%]
 
-======================== 13 passed, 1 skipped in 0.09s ========================
+======================== 13 passed, 1 skipped in 0.10s ========================
+PYTEST_EXIT:0
